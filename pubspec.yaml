@@ -10,6 +10,8 @@ environment:
 dependencies:
   path: ^1.9.0
   args: ^2.5.0
+  yaml: ^3.1.4
+  yaml_edit: ^2.0.0
 
 dev_dependencies:
   lints: ^6.0.0
