@@ -89,17 +89,12 @@ class RunCommand extends Command {
       sections.addAll(['dependencies', 'dev_dependencies']);
     }
 
-    // Build backup map
+    // Build backup map (only dependency sections) so it can be reused as local-deps.yaml
     final backup = <String, dynamic>{};
     for (final s in ['dependencies', 'dev_dependencies']) {
       final node = pubYaml.containsKey(s) ? pubYaml[s] : null;
-      backup[s] = _toPlain(node);
+      backup[s] = _toPlain(node) ?? <String, dynamic>{};
     }
-    backup['__metadata'] = {
-      'timestamp': DateTime.now().toIso8601String(),
-      'source_pubspec': pubspecPath,
-      'local_deps_source': localDepsPath,
-    };
 
     final added = <String>[];
     final updated = <String>[];
@@ -112,11 +107,9 @@ class RunCommand extends Command {
       if (localSection == null) continue;
       final localMap = localSection as YamlMap;
 
-      // ensure parent mapping exists
       final parentExists =
           pubYaml.containsKey(section) && pubYaml[section] is YamlMap;
       if (!parentExists) {
-        // create the mapping in the editor
         editor.update([section], <String, dynamic>{});
       }
 
@@ -139,7 +132,6 @@ class RunCommand extends Command {
         try {
           editor.update(path, value);
         } catch (e) {
-          // fallback: set the whole section
           final secMap = origSection != null
               ? _toPlain(origSection) as Map<String, dynamic>
               : <String, dynamic>{};
@@ -155,13 +147,16 @@ class RunCommand extends Command {
       }
     }
 
-    // Prepare backup YAML string
     final backupYaml = _toYamlString(backup);
 
     if (dryRun) {
       logger.info('Dry run mode - no files will be written.');
-      if (added.isNotEmpty) logger.info('Added: ${added.join(', ')}');
-      if (updated.isNotEmpty) logger.info('Updated: ${updated.join(', ')}');
+      if (added.isNotEmpty) {
+        logger.info('Added: ${added.join(', ')}');
+      }
+      if (updated.isNotEmpty) {
+        logger.info('Updated: ${updated.join(', ')}');
+      }
       if (warnings.isNotEmpty) {
         logger.warning('Warnings: ${warnings.join(', ')}');
       }
@@ -170,7 +165,6 @@ class RunCommand extends Command {
       return;
     }
 
-    // Write backup
     try {
       File(backupPath).writeAsStringSync(backupYaml);
       logger.success('Wrote backup to $backupPath');
@@ -180,14 +174,17 @@ class RunCommand extends Command {
       return;
     }
 
-    // Write updated pubspec atomically
     try {
       final tmpPath = '$pubspecPath.tmp';
       File(tmpPath).writeAsStringSync(editor.toString());
       File(tmpPath).renameSync(pubspecPath);
       logger.success('Updated pubspec.yaml at $pubspecPath');
-      if (added.isNotEmpty) logger.info('Added: ${added.join(', ')}');
-      if (updated.isNotEmpty) logger.info('Updated: ${updated.join(', ')}');
+      if (added.isNotEmpty) {
+        logger.info('Added: ${added.join(', ')}');
+      }
+      if (updated.isNotEmpty) {
+        logger.info('Updated: ${updated.join(', ')}');
+      }
       if (warnings.isNotEmpty) {
         logger.warning('Warnings: ${warnings.join(', ')}');
       }
