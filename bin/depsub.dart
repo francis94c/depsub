@@ -1,5 +1,11 @@
-import 'package:depsub/depsub.dart' as depsub;
+import 'package:args/command_runner.dart';
+import 'package:depsub/console/commands/init.dart';
 
 void main(List<String> arguments) {
-  print('Hello world: ${depsub.calculate()}!');
+  final commandRunner = CommandRunner(
+    'depsub',
+    'A tool for managing dependency substitutions',
+  )..addCommand(InitCommand());
+
+  commandRunner.run(arguments);
 }
