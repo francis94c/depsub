@@ -21,7 +21,7 @@ class InitCommand extends Command {
       localSubstitutionFile.createSync();
 
       localSubstitutionFile.writeAsStringSync('''dependencies:
-  - cupertino_icons: ^1.0.8
+  cupertino_icons: ^1.0.8
 dev_dependencies:
 ''');
 
@@ -29,36 +29,39 @@ dev_dependencies:
         'Initialized local substitution file: ${localSubstitutionFile.path}',
       );
 
-      return;
-    }
+      final gitIgnoreFile = File('.gitignore');
 
-    final gitIgnoreFile = File('.gitignore');
-
-    if (!gitIgnoreFile.existsSync()) {
-      gitIgnoreFile.createSync();
-      gitIgnoreFile.writeAsStringSync(
-        'local-deps.yaml\n',
-        mode: FileMode.append,
-      );
-      gitIgnoreFile.writeAsStringSync('deps-bkp.yaml\n', mode: FileMode.append);
-      logger.success(
-        'Updated .gitignore with local-deps.yaml and deps-bkp.yaml',
-      );
-    } else {
-      if (!gitIgnoreFile.readAsStringSync().contains('local-deps.yaml')) {
+      if (!gitIgnoreFile.existsSync()) {
+        gitIgnoreFile.createSync();
         gitIgnoreFile.writeAsStringSync(
           'local-deps.yaml\n',
           mode: FileMode.append,
         );
-        logger.success('Updated .gitignore with local-deps.yaml');
-      }
-      if (!gitIgnoreFile.readAsStringSync().contains('deps-bkp.yaml')) {
         gitIgnoreFile.writeAsStringSync(
           'deps-bkp.yaml\n',
           mode: FileMode.append,
         );
-        logger.success('Updated .gitignore with deps-bkp.yaml');
+        logger.success(
+          'Updated .gitignore with local-deps.yaml and deps-bkp.yaml',
+        );
+      } else {
+        if (!gitIgnoreFile.readAsStringSync().contains('local-deps.yaml')) {
+          gitIgnoreFile.writeAsStringSync(
+            'local-deps.yaml\n',
+            mode: FileMode.append,
+          );
+          logger.success('Updated .gitignore with local-deps.yaml');
+        }
+        if (!gitIgnoreFile.readAsStringSync().contains('deps-bkp.yaml')) {
+          gitIgnoreFile.writeAsStringSync(
+            'deps-bkp.yaml\n',
+            mode: FileMode.append,
+          );
+          logger.success('Updated .gitignore with deps-bkp.yaml');
+        }
       }
+
+      return;
     }
 
     logger.warning(
