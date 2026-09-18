@@ -89,12 +89,8 @@ class RunCommand extends Command {
       sections.addAll(['dependencies', 'dev_dependencies']);
     }
 
-    // Build backup map (only dependency sections) so it can be reused as local-deps.yaml
-    final backup = <String, dynamic>{};
-    for (final s in ['dependencies', 'dev_dependencies']) {
-      final node = pubYaml.containsKey(s) ? pubYaml[s] : null;
-      backup[s] = _toPlain(node) ?? <String, dynamic>{};
-    }
+    // We'll build a backup of ORIGINAL values only for dependencies that are updated.
+    // (Do this after computing `updated` so the backup contains only changed keys.)
 
     final added = <String>[];
     final updated = <String>[];
@@ -143,6 +139,22 @@ class RunCommand extends Command {
           added.add('$section:$key');
         } else if (origValue != value) {
           updated.add('$section:$key');
+        }
+      }
+    }
+
+    // Build backup containing only original values for updated keys
+    final backup = <String, dynamic>{};
+    for (final entry in updated) {
+      final parts = entry.split(':');
+      if (parts.length != 2) continue;
+      final sec = parts[0];
+      final key = parts[1];
+      if (pubYaml.containsKey(sec) && pubYaml[sec] is YamlMap) {
+        final sect = pubYaml[sec] as YamlMap;
+        if (sect.containsKey(key)) {
+          backup.putIfAbsent(sec, () => <String, dynamic>{});
+          (backup[sec] as Map)[key.toString()] = _toPlain(sect[key]);
         }
       }
     }
