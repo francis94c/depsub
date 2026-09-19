@@ -1,12 +1,11 @@
 name: depsub
-description: A sample command-line application.
+description: A tool for managing Dart project dependencies, especially local dependencies or overrides you can't publish.
 version: 1.0.0
-# repository: https://github.com/my_org/my_repo
+repository: https://github.com/francis94c/depsub
 
 environment:
   sdk: ^3.13.3
 
-# Add regular dependencies here.
 dependencies:
   path: ^1.9.0
   args: ^2.5.0
@@ -19,3 +18,10 @@ dev_dependencies:
 
 executables:
   depsub: depsub
+
+topics:
+  - dart
+  - pub
+  - dependency-override
+  - flutter
+  - path
