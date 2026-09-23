@@ -42,13 +42,15 @@ Quick Start
 
 ```yaml
 overrides:
-	some_package:
-		path: ../local/some_package
-	patched_dep:
-		hosted:
-			name: patched_dep
-			url: https://example.com/patched_dep.tar.gz
+  some_package:
+	path: ../local/some_package
+  patched_dep:
+    hosted:
+	  name: patched_dep
+	  url: https://example.com/patched_dep.tar.gz
 ```
+
+Or just run `depsub init` in the root of your Flutter/Dart project.
 
 2. Preview what will change:
 

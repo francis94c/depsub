@@ -38,6 +38,11 @@ class RunCommand extends Command {
       ..addOption(
         'backup',
         help: 'Path to write backup file (default: deps-bkp.yaml)',
+      )
+      ..addFlag(
+        'backup-all-types',
+        negatable: false,
+        help: 'Also include non-scalar dependency nodes (git/path/hosted) in backup',
       );
   }
 
@@ -48,6 +53,7 @@ class RunCommand extends Command {
     final onlyDev = argResults?['only-dev'] as bool? ?? false;
     final onlyProd = argResults?['only-prod'] as bool? ?? false;
     final backupOpt = argResults?['backup'] as String?;
+    final backupAllTypes = argResults?['backup-all-types'] as bool? ?? false;
 
     if (onlyDev && onlyProd) {
       logger.error('Flags --only-dev and --only-prod are mutually exclusive.');
@@ -153,13 +159,53 @@ class RunCommand extends Command {
       if (pubYaml.containsKey(sec) && pubYaml[sec] is YamlMap) {
         final sect = pubYaml[sec] as YamlMap;
         if (sect.containsKey(key)) {
-          backup.putIfAbsent(sec, () => <String, dynamic>{});
-          (backup[sec] as Map)[key.toString()] = _toPlain(sect[key]);
+          final originalNode = sect[key];
+          final originalPlain = _toPlain(originalNode);
+          final isScalar =
+              originalPlain == null ||
+              originalPlain is String ||
+              originalPlain is num ||
+              originalPlain is bool;
+          if (isScalar || backupAllTypes) {
+            backup.putIfAbsent(sec, () => <String, dynamic>{});
+            (backup[sec] as Map)[key.toString()] = originalPlain;
+          } else {
+            warnings.add(
+              'Skipped non-scalar backup for $sec:$key (use --backup-all-types to include)',
+            );
+          }
         }
       }
     }
 
-    final backupYaml = _toYamlString(backup);
+    // Merge with any existing backup file so we don't overwrite previous entries.
+    Map<String, dynamic> mergedBackup = <String, dynamic>{};
+    if (File(backupPath).existsSync()) {
+      try {
+        final existingText = File(backupPath).readAsStringSync();
+        final existingYaml = loadYaml(existingText);
+        final existingPlain = _toPlain(existingYaml);
+        if (existingPlain is Map) {
+          mergedBackup.addAll(existingPlain.cast<String, dynamic>());
+        }
+      } catch (e) {
+        warnings.add('Failed to read existing backup at $backupPath: $e');
+      }
+    }
+
+    // Merge newly computed backup entries into existing backup map.
+    for (final sec in backup.keys) {
+      mergedBackup.putIfAbsent(sec, () => <String, dynamic>{});
+      final dest = mergedBackup[sec] as Map;
+      final src = backup[sec];
+      if (src is Map) {
+        for (final k in src.keys) {
+          dest[k.toString()] = src[k];
+        }
+      }
+    }
+
+    final backupYaml = _toYamlString(mergedBackup);
 
     if (dryRun) {
       logger.info('Dry run mode - no files will be written.');
